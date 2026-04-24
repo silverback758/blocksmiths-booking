@@ -10,26 +10,29 @@ const sessions = [
       "Small-group training focused on footwork, hand technique, leverage, and competitive reps. Ideal for consistent development.",
     spots: "Limited spots",
     accent: "#25C0D5",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/blocksmiths-weekday-training",
   },
   {
     title: "Sunday Session",
-    schedule: "Sundays · 2:00–3:00 PM",
+    schedule: "Every Sunday · 2:00–3:00 PM",
     price: "$50",
     unit: "per athlete",
     description:
-      "Indoor facility session at Lasorda Legacy Sports Academy, Johnstown, CO. Minimum 3 athletes required for session to run.",
+      "Indoor training at Lasorda Legacy Sports Academy, Johnstown, CO. Controlled environment, full technique focus. Minimum 3 athletes required.",
     spots: "Min 3 athletes",
     accent: "#0E5B8E",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/blocksmiths-strength-skill",
   },
   {
     title: "1:1 Training",
     schedule: "By appointment",
-    price: "$90",
+    price: "$85",
     unit: "per session",
     description:
       "Fully individualized coaching. One athlete, full focus. We address exactly what your lineman needs — nothing generic.",
     spots: "1 athlete",
     accent: "#25C0D5",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/1-1-training",
   },
   {
     title: "Semi-Private",
@@ -40,6 +43,7 @@ const sessions = [
       "Bring 2–3 athletes for focused, affordable coaching. Same expert attention, split across a small group.",
     spots: "2–3 athletes",
     accent: "#0E5B8E",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/small-group-training",
   },
   {
     title: "Team Training",
@@ -50,10 +54,48 @@ const sessions = [
       "Bring your O-line or D-line unit. Full position group training — technique, communication, and competitive install.",
     spots: "Up to 10 athletes",
     accent: "#192B57",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/team-training",
     packages: [
       { label: "5-Session Pack", price: "$1,250" },
       { label: "10-Session Pack", price: "$2,000" },
     ],
+  },
+];
+
+// Stripe Payment Links — paste your links from Stripe dashboard:
+// Products → [package product] → "Create payment link" → copy URL
+const trainingPackages = [
+  {
+    title: "1:1 Training",
+    count: "5 Sessions",
+    price: "$400",
+    perSession: "$80 / session",
+    savings: "Save $25",
+    stripeUrl: "https://buy.stripe.com/6oUcN5de070l8cfh2tgEg03",
+  },
+  {
+    title: "1:1 Training",
+    count: "10 Sessions",
+    price: "$750",
+    perSession: "$75 / session",
+    savings: "Save $100",
+    stripeUrl: "https://buy.stripe.com/dRmeVd0re84peAD4fHgEg02",
+  },
+  {
+    title: "Team Training",
+    count: "5 Sessions",
+    price: "$1,250",
+    perSession: "$250 / session",
+    savings: "Save $250",
+    stripeUrl: "https://buy.stripe.com/5kQ8wPei470ldwzfYpgEg01",
+  },
+  {
+    title: "Team Training",
+    count: "10 Sessions",
+    price: "$2,000",
+    perSession: "$200 / session",
+    savings: "Save $1,000",
+    stripeUrl: "https://buy.stripe.com/dRm6oHde0gAVakn3bDgEg00",
   },
 ];
 
@@ -64,6 +106,13 @@ const pillars = [
   { label: "Explosiveness", detail: "First-step quickness and power delivery" },
   { label: "Strength Base", detail: "Age-appropriate force development" },
   { label: "Position IQ", detail: "Reading keys, alignment, and assignments" },
+];
+
+const trustItems = [
+  "Northern Colorado",
+  "O-Line & D-Line Specialists",
+  "Ages 8–18",
+  "Tue · Fri · Every Sunday",
 ];
 
 export default function Home() {
@@ -151,6 +200,27 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Trust Strip */}
+      <div style={{ backgroundColor: "#0E5B8E" }}>
+        <div className="max-w-5xl mx-auto px-6 py-3 flex flex-wrap items-center justify-center">
+          {trustItems.map((item, i) => (
+            <span key={item} className="flex items-center">
+              <span
+                className="text-sm font-medium tracking-wide"
+                style={{ color: "rgba(255,255,255,0.78)" }}
+              >
+                {item}
+              </span>
+              {i < trustItems.length - 1 && (
+                <span className="mx-4 text-sm" style={{ color: "rgba(255,255,255,0.28)" }}>
+                  |
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* What We Train */}
       <section className="py-20 px-6" style={{ backgroundColor: "#F5F6F8" }}>
         <div className="max-w-5xl mx-auto">
@@ -166,7 +236,7 @@ export default function Home() {
             {pillars.map((p) => (
               <div
                 key={p.label}
-                className="rounded-xl p-5 border"
+                className="rounded-xl p-5 border transition-shadow duration-200 hover:shadow-md"
                 style={{ backgroundColor: "white", borderColor: "#e2e8f0" }}
               >
                 <div className="w-2 h-6 rounded mb-3" style={{ backgroundColor: "#25C0D5" }} />
@@ -197,7 +267,7 @@ export default function Home() {
             {sessions.map((s) => (
               <div
                 key={s.title}
-                className="rounded-2xl border p-7 flex flex-col"
+                className="rounded-2xl border p-7 flex flex-col transition-shadow duration-200 hover:shadow-lg"
                 style={{
                   borderColor: "#e2e8f0",
                   borderTopColor: s.accent,
@@ -222,7 +292,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <p className="text-sm leading-relaxed mb-4 flex-1" style={{ color: "#5a6478" }}>
+                <p className="text-sm leading-relaxed mb-5 flex-1" style={{ color: "#5a6478" }}>
                   {s.description}
                 </p>
                 <div
@@ -235,7 +305,7 @@ export default function Home() {
                   >
                     {s.spots}
                   </span>
-                  {s.packages && (
+                  {s.packages ? (
                     <div className="flex gap-4">
                       {s.packages.map((pkg) => (
                         <div key={pkg.label} className="text-right">
@@ -248,6 +318,16 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <a
+                      href={s.calendlyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold tracking-wide transition-opacity hover:opacity-60"
+                      style={{ color: s.accent }}
+                    >
+                      Book this session →
+                    </a>
                   )}
                 </div>
               </div>
@@ -256,15 +336,87 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Training Packages */}
+      <section id="packages" className="py-20 px-6" style={{ backgroundColor: "#192B57" }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-4">
+            <div
+              className="inline-block text-xs font-bold tracking-widest uppercase mb-4 px-3 py-1 rounded"
+              style={{ backgroundColor: "rgba(37,192,213,0.15)", color: "#25C0D5" }}
+            >
+              Commit &amp; Save
+            </div>
+            <h2 className="text-3xl font-black text-white mb-3">
+              Training Packages
+            </h2>
+            <p className="text-base max-w-xl mx-auto" style={{ color: "#8a9ab5" }}>
+              Lock in a block of sessions at a reduced rate. Packages are paid upfront
+              via Stripe — scheduling is handled through Calendly after purchase.
+            </p>
+          </div>
+
+          <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {trainingPackages.map((pkg) => (
+              <div
+                key={`${pkg.title}-${pkg.count}`}
+                className="rounded-2xl p-6 flex flex-col transition-transform duration-200 hover:-translate-y-0.5"
+                style={{ backgroundColor: "#0E5B8E" }}
+              >
+                <div className="mb-4">
+                  <div className="text-xs font-bold tracking-widest uppercase mb-1" style={{ color: "#25C0D5" }}>
+                    {pkg.title}
+                  </div>
+                  <div className="text-lg font-black text-white">{pkg.count}</div>
+                </div>
+
+                <div className="mb-5">
+                  <div className="text-3xl font-black text-white">{pkg.price}</div>
+                  <div className="text-sm mt-0.5" style={{ color: "#8a9ab5" }}>{pkg.perSession}</div>
+                </div>
+
+                <div
+                  className="text-xs font-bold px-2 py-1 rounded w-fit mb-6"
+                  style={{ backgroundColor: "rgba(37,192,213,0.18)", color: "#25C0D5" }}
+                >
+                  {pkg.savings}
+                </div>
+
+                <a
+                  href={pkg.stripeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-auto block text-center text-sm font-bold py-3 px-4 rounded-xl transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: "#25C0D5", color: "#192B57" }}
+                >
+                  Buy Package
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs mt-8" style={{ color: "#5a6478" }}>
+            After purchase you&apos;ll receive a confirmation — then we&apos;ll coordinate
+            scheduling directly. Questions?{" "}
+            <a href="mailto:coachcooper@mytrenches.com" style={{ color: "#25C0D5" }}>
+              coachcooper@mytrenches.com
+            </a>
+          </p>
+        </div>
+      </section>
+
       {/* About Coach */}
-      <section className="py-20 px-6" style={{ backgroundColor: "#192B57" }}>
+      <section className="py-20 px-6" style={{ backgroundColor: "#252525" }}>
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div
-              className="w-32 h-32 md:w-40 md:h-40 rounded-2xl flex-shrink-0 flex items-center justify-center text-5xl font-black"
-              style={{ backgroundColor: "#0E5B8E", color: "#25C0D5" }}
+              className="w-36 h-44 md:w-48 md:h-60 rounded-2xl flex-shrink-0 overflow-hidden"
+              style={{ backgroundColor: "#0E5B8E" }}
             >
-              EC
+              <img
+                src="/images/coach-cooper.png"
+                alt="Coach Cooper"
+                className="w-full h-full object-cover object-center"
+              />
             </div>
             <div>
               <div className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: "#25C0D5" }}>
@@ -275,14 +427,14 @@ export default function Home() {
                 <br />
                 No generic reps.
               </h2>
-              <p className="text-blue-200 leading-relaxed mb-4">
+              <p className="leading-relaxed mb-4" style={{ color: "#8a9ab5" }}>
                 Most youth football training treats linemen as an afterthought.
                 Blocksmiths is built specifically for O-line and D-line
                 development — from the footwork fundamentals every lineman needs
                 at age 8 to the advanced technique and IQ work that separates
                 athletes at the high school level.
               </p>
-              <p className="text-blue-200 leading-relaxed">
+              <p className="leading-relaxed" style={{ color: "#8a9ab5" }}>
                 Every session is intentional. Every rep has a purpose. Your
                 athlete will know why they&apos;re doing what they&apos;re doing
                 — and so will you.
@@ -309,8 +461,18 @@ export default function Home() {
               Book a Session
             </h2>
             <p className="text-base max-w-xl mx-auto" style={{ color: "#5a6478" }}>
-              Select your session type, pick a time, and pay securely. No chasing
-              confirmations — your spot is locked the moment you book.
+              Select your session type, pick a time, and pay securely. Your spot is
+              locked the moment you book.
+            </p>
+            <p className="text-sm mt-2" style={{ color: "#8a9ab5" }}>
+              Questions before booking?{" "}
+              <a
+                href="mailto:coachcooper@mytrenches.com"
+                className="font-semibold underline-offset-2 underline"
+                style={{ color: "#25C0D5" }}
+              >
+                coachcooper@mytrenches.com
+              </a>
             </p>
           </div>
           <CalendlyEmbed />
@@ -323,7 +485,7 @@ export default function Home() {
           <h2 className="text-3xl font-black text-center mb-12" style={{ color: "#192B57" }}>
             Common Questions
           </h2>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {[
               {
                 q: "What age range do you train?",
@@ -340,6 +502,10 @@ export default function Home() {
               {
                 q: "What if the Sunday session doesn't hit the minimum?",
                 a: "Sunday sessions require a minimum of 3 athletes to run. If we don't hit the minimum, you'll be contacted and fully refunded.",
+              },
+              {
+                q: "How do training packages work?",
+                a: "Pay upfront via Stripe to lock in your sessions at the discounted rate. After purchase, we'll coordinate scheduling directly — email coachcooper@mytrenches.com or book through Calendly.",
               },
               {
                 q: "Can I book a 30-minute 1:1?",
