@@ -55,7 +55,7 @@ export default function CalendlyEmbed({ url }: CalendlyEmbedProps) {
     <div
       ref={containerRef}
       className="w-full rounded-2xl overflow-hidden border"
-      style={{ borderColor: "#e2e8f0", minHeight: "700px" }}
+      style={{ borderColor: "#e2e8f0", minWidth: "320px", height: "700px" }}
     />
   );
 }
