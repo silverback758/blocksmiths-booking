@@ -1,0 +1,8 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-DNS-Prefetch-Control: off
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://assets.calendly.com https://static.cloudflareinsights.com; frame-src https://calendly.com; img-src 'self' data: https://*.calendly.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.calendly.com https://static.cloudflareinsights.com; font-src 'self' https://fonts.gstatic.com; base-uri 'self'; object-src 'none'; form-action 'self' https://calendly.com; frame-ancestors 'none';
