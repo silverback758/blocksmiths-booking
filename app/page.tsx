@@ -622,7 +622,7 @@ export default function Home() {
               },
               {
                 q: "What should my athlete bring?",
-                a: "Cleats or athletic shoes, water, and a willingness to work. No pads required for technique sessions.",
+                a: "Cleats, water, and a willingness to work. No pads required for technique sessions.",
               },
               {
                 q: "How does group session booking work?",
@@ -672,9 +672,14 @@ export default function Home() {
           <p className="text-xs text-center" style={{ color: "#8a9ab5" }}>
             Coach clarity. Forge toughness. Live mastery.
           </p>
-          <a href="mailto:coachcooper@mytrenches.com" className="text-xs" style={{ color: "#25C0D5" }}>
-            coachcooper@mytrenches.com
-          </a>
+          <div className="flex flex-col items-end gap-1">
+            <a href="mailto:coachcooper@mytrenches.com" className="text-xs" style={{ color: "#25C0D5" }}>
+              coachcooper@mytrenches.com
+            </a>
+            <a href="tel:9702953232" className="text-xs" style={{ color: "#8a9ab5" }}>
+              970-295-3232
+            </a>
+          </div>
         </div>
         <div className="max-w-5xl mx-auto mt-6 pt-6 border-t flex flex-col md:flex-row items-center justify-between gap-3" style={{ borderColor: "#0E5B8E" }}>
           <div className="flex gap-5 text-xs" style={{ color: "#8a9ab5" }}>

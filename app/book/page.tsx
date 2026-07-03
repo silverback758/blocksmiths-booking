@@ -90,6 +90,7 @@ export default function BookPage() {
   const [foundPkg, setFoundPkg] = useState<Package | null>(null);
   const [pkgLookupError, setPkgLookupError] = useState<string | null>(null);
   const [pkgName, setPkgName] = useState("");
+  const [pkgPhone, setPkgPhone] = useState("");
   const [registering, setRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -585,6 +586,10 @@ export default function BookPage() {
             <p className="text-xs text-center mt-3" style={{ color: "#8a9ab5" }}>
               Powered by Stripe · No card data stored on this site
             </p>
+            <p className="text-xs text-center mt-2 leading-relaxed" style={{ color: "#8a9ab5" }}>
+              If you provide a phone number at checkout, you consent to receive booking confirmations via SMS. Msg &amp; data rates may apply. Reply STOP to opt out.{" "}
+              <a href="/privacy" style={{ color: "#25C0D5" }}>Privacy Policy</a>
+            </p>
           </div>
         )}
 
@@ -617,6 +622,26 @@ export default function BookPage() {
                 className="w-full rounded-lg border px-4 py-2.5 text-sm outline-none"
                 style={{ borderColor: "#e2e8f0", color: "#192B57" }}
               />
+            </div>
+            <div className="mb-4">
+              <label
+                className="block text-xs font-bold mb-1.5 uppercase tracking-wide"
+                style={{ color: "#5a6478" }}
+              >
+                Phone number <span className="font-normal normal-case">— optional, for session reminders</span>
+              </label>
+              <input
+                type="tel"
+                value={pkgPhone}
+                onChange={(e) => setPkgPhone(e.target.value)}
+                placeholder="(970) 555-0100"
+                className="w-full rounded-lg border px-4 py-2.5 text-sm outline-none"
+                style={{ borderColor: "#e2e8f0", color: "#192B57" }}
+              />
+              <p className="text-xs mt-1.5 leading-relaxed" style={{ color: "#8a9ab5" }}>
+                By providing your number, you consent to receive booking confirmations and session reminders via SMS from Blocksmiths. Msg &amp; data rates may apply. Reply STOP to opt out.{" "}
+                <a href="/privacy" style={{ color: "#25C0D5" }}>Privacy Policy</a>
+              </p>
             </div>
             {registerError && (
               <p className="text-sm mb-3" style={{ color: "#e53e3e" }}>
