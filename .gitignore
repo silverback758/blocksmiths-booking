@@ -37,6 +37,10 @@ yarn-error.log*
 .vercel
 .wrangler
 
+# claude code local settings (contains secrets)
+.claude/settings.local.json
+.claude/*.local.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

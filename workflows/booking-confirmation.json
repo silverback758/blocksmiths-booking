@@ -1,0 +1,80 @@
+{
+  "name": "Blocksmiths — Booking Confirmation",
+  "nodes": [
+    {
+      "id": "b1c2d3e4-0001-0001-0001-b1c2d3e40001",
+      "name": "Booking Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "blocksmiths-booking-confirm",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "b1c2d3e4-0002-0002-0002-b1c2d3e40002",
+      "name": "Parse & Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "jsCode": "const NL=String.fromCharCode(10);const p=$input.first().json;const{customerEmail,customerName,paymentType,sessions,sessionsRemaining,validThrough}=p;const firstName=customerName.split(' ')[0];const sessionList=sessions.map(s=>'· '+s.label).join(NL);let balanceLine='';if(sessionsRemaining===null&&validThrough){const d=new Date(validThrough+'T12:00:00Z').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});balanceLine='Unlimited sessions — active through '+d+'.';}else if(sessionsRemaining!==null){balanceLine=sessionsRemaining+' session'+(sessionsRemaining!==1?'s':'')+' remaining on your package.';}const count=sessions.length;const countStr=count+' session'+(count!==1?'s':'');let emailPrompt;if(paymentType==='individual'){emailPrompt='Write a booking confirmation email for '+firstName+', who just paid for '+countStr+' at Blocksmiths. Follow this template closely:'+NL+NL+firstName+','+NL+NL+'Payment confirmed. Sessions locked in:'+NL+NL+sessionList+NL+NL+'Location: Traverse Park, Fort Collins, CO. Show up early. Wear cleats. Bring water.'+NL+NL+'coachcooper@mytrenches.com'+NL+NL+'Return only the email body. No subject line. No explanation. No additions.';}else{const bp=balanceLine?NL+NL+balanceLine:'';emailPrompt='Write a booking confirmation email for '+firstName+', who just booked '+countStr+' using their Blocksmiths package. Follow this template closely:'+NL+NL+firstName+','+NL+NL+'Sessions confirmed:'+NL+NL+sessionList+bp+NL+NL+'Location: Traverse Park, Fort Collins, CO. Show up early. Wear cleats. Bring water. Book more sessions: blocksmiths.mytrenches.com/book'+NL+NL+'coachcooper@mytrenches.com'+NL+NL+'Return only the email body. No subject line. No explanation. No additions.';}const claudeBody={model:'claude-haiku-4-5-20251001',max_tokens:400,system:'You are Coach Eric Cooper, founder of Blocksmiths, a youth football training company specializing in offensive and defensive line development. Write like a coach: direct, confident, no wasted words. Never use: I wanted to reach out, I hope this finds you well, excited to, thrilled, journey, empower, looking forward to working with you, do not hesitate to reach out, please feel free, or anything that sounds like a marketing template. No motivational filler. Every sentence does a job.',messages:[{role:'user',content:emailPrompt}]};return[{json:{customerEmail,firstName,firstSessionLabel:sessions[0]?sessions[0].label:'your upcoming session',claudeBody:JSON.stringify(claudeBody)}}];"
+      }
+    },
+    {
+      "id": "b1c2d3e4-0003-0003-0003-b1c2d3e40003",
+      "name": "Claude — Generate Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "REPLACE_WITH_ANTHROPIC_API_KEY" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.claudeBody }}"
+      }
+    },
+    {
+      "id": "b1c2d3e4-0004-0004-0004-b1c2d3e40004",
+      "name": "Gmail — Send Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [900, 300],
+      "parameters": {
+        "sendTo": "={{ $('Parse & Prepare').item.json.customerEmail }}",
+        "subject": "Sessions confirmed — {{ $('Parse & Prepare').item.json.firstSessionLabel }}",
+        "message": "={{ $json.content[0].text }}",
+        "options": {
+          "senderName": "Coach Cooper"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Booking Webhook": {
+      "main": [[{ "node": "Parse & Prepare", "type": "main", "index": 0 }]]
+    },
+    "Parse & Prepare": {
+      "main": [[{ "node": "Claude — Generate Message", "type": "main", "index": 0 }]]
+    },
+    "Claude — Generate Message": {
+      "main": [[{ "node": "Gmail — Send Confirmation", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

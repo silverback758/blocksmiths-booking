@@ -1,0 +1,112 @@
+{
+  "name": "Blocksmiths — Package Purchase Welcome",
+  "nodes": [
+    {
+      "id": "a1b2c3d4-0001-0001-0001-a1b2c3d40001",
+      "name": "Stripe Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "blocksmiths-purchase",
+        "responseMode": "onReceived",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-0006-0006-0006-a1b2c3d40006",
+      "name": "Verify Stripe Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst data = $input.first().json;\nconst stripeSignature = data.headers?.['stripe-signature'];\nconst rawBody = data.rawBody;\n\nconst webhookSecret = 'REPLACE_WITH_STRIPE_WEBHOOK_SIGNING_SECRET';\n\nif (!stripeSignature) throw new Error('Missing stripe-signature header — possible non-Stripe request');\nif (!rawBody) throw new Error('Raw body unavailable — ensure rawBody option is enabled on the Webhook node');\n\nconst elements = stripeSignature.split(',');\nconst timestampEl = elements.find(e => e.startsWith('t='));\nconst sigEl = elements.find(e => e.startsWith('v1='));\n\nif (!timestampEl || !sigEl) throw new Error('Malformed stripe-signature header');\n\nconst timestamp = timestampEl.split('=')[1];\nconst signature = sigEl.split('=')[1];\n\nconst signedPayload = timestamp + '.' + rawBody;\nconst expectedSig = crypto\n  .createHmac('sha256', webhookSecret)\n  .update(signedPayload, 'utf8')\n  .digest('hex');\n\nif (expectedSig !== signature) throw new Error('Stripe signature verification failed — request rejected');\n\nconst tolerance = 300;\nconst now = Math.floor(Date.now() / 1000);\nif (Math.abs(now - parseInt(timestamp, 10)) > tolerance) {\n  throw new Error('Stripe webhook timestamp expired — possible replay attack');\n}\n\nreturn $input.all();"
+      }
+    },
+    {
+      "id": "a1b2c3d4-0002-0002-0002-a1b2c3d40002",
+      "name": "Parse & Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "parameters": {
+        "jsCode": "const event = $input.first().json.body;\nconst session = event.data?.object;\n\nif (!session) throw new Error('No session object in Stripe webhook payload. Keys received: ' + JSON.stringify(Object.keys($input.first().json)));\n\nconst fullName = session.customer_details?.name || 'Athlete';\nconst firstName = fullName.split(' ')[0];\nconst customerEmail = session.customer_details?.email;\nconst customerPhone = session.customer_details?.phone;\nconst amountTotal = session.amount_total;\nconst stripePaymentId = session.payment_intent;\n\n// IMPORTANT: Amounts are in cents. Update after Eric creates the Stripe payment links.\nconst packageMap = {\n  // Group session packages — booking handled at /book page after purchase\n  11000: { type: 'group-4pack',    displayType: 'Group Training 4-Pack',  sessions: 4,    sessionType: 'group' },\n  20000: { type: 'group-8pack',    displayType: 'Group Training 8-Pack',  sessions: 8,    sessionType: 'group' },\n  15000: { type: 'membership',     displayType: 'Monthly Membership',     sessions: null, sessionType: 'group' },\n  25000: { type: 'summer-special', displayType: 'Summer Special',         sessions: null, sessionType: 'group' },\n  // 1:1 and team packages — scheduling via Calendly after purchase\n  40000:  { type: '1on1-5pack',  displayType: '1:1 Training',  sessions: 5,  sessionType: 'calendly', calendlyUrl: 'https://calendly.com/coachcooper-mytrenches/1-1-package-session' },\n  75000:  { type: '1on1-10pack', displayType: '1:1 Training',  sessions: 10, sessionType: 'calendly', calendlyUrl: 'https://calendly.com/coachcooper-mytrenches/1-1-package-session' },\n  125000: { type: 'team-5pack',  displayType: 'Team Training', sessions: 5,  sessionType: 'calendly', calendlyUrl: 'https://calendly.com/coachcooper-mytrenches/team-training-package-session' },\n  200000: { type: 'team-10pack', displayType: 'Team Training', sessions: 10, sessionType: 'calendly', calendlyUrl: 'https://calendly.com/coachcooper-mytrenches/team-training-package-session' }\n};\n\nconst pkg = packageMap[amountTotal];\nif (!pkg) throw new Error('Unrecognized purchase amount: ' + amountTotal + ' cents. Add it to packageMap.');\n\nconst bookingUrl = 'https://blocksmiths.mytrenches.com/book';\n\n// Write group packages to Supabase so customers can redeem sessions at /book\nif (pkg.sessionType === 'group') {\n  try {\n    const supabaseUrl = 'https://vyvxvpxnhihlbhbvjwxy.supabase.co';\n    const supabaseKey = 'REPLACE_WITH_SUPABASE_SERVICE_ROLE_KEY';\n\n    let validThrough = null;\n    if (pkg.type === 'membership') {\n      const now = new Date();\n      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);\n      validThrough = endOfMonth.toISOString().split('T')[0];\n    } else if (pkg.type === 'summer-special') {\n      validThrough = '2026-07-31';\n    }\n\n    await fetch(supabaseUrl + '/rest/v1/blocksmiths_packages', {\n      method: 'POST',\n      headers: {\n        'apikey': supabaseKey,\n        'Authorization': 'Bearer ' + supabaseKey,\n        'Content-Type': 'application/json',\n        'Prefer': 'return=minimal'\n      },\n      body: JSON.stringify({\n        customer_email: customerEmail,\n        customer_name: fullName,\n        package_type: pkg.type,\n        sessions_total: pkg.sessions,\n        sessions_remaining: pkg.sessions,\n        valid_through: validThrough,\n        stripe_payment_id: stripePaymentId\n      })\n    });\n  } catch (e) {\n    console.error('Supabase write failed:', e.message);\n    // Continue — email still sends even if Supabase write fails\n  }\n}\n\nlet emailContent;\nif (pkg.sessionType === 'group') {\n  const sessionsLine = pkg.sessions\n    ? 'You have ' + pkg.sessions + ' group training sessions locked in.'\n    : 'You have unlimited group training sessions locked in.';\n  emailContent = 'Write a welcome email for ' + firstName + ', who just purchased a ' + pkg.displayType + ' from Blocksmiths. Follow this template closely:\\n\\n' + firstName + ',\\n\\nPayment confirmed. ' + sessionsLine + '\\n\\nUse the link below to pick your sessions and lock them in.\\n\\n' + bookingUrl + '\\n\\nSessions run Tue/Fri at 5:30 PM. Show up early, bring water, wear cleats.\\n\\nCoach Cooper\\nBlocksmiths\\ncoachcooper@mytrenches.com\\n\\nReturn only the email body. No subject line. No explanation. No additions.';\n} else {\n  emailContent = 'Write a welcome email for ' + firstName + ', who just bought a ' + pkg.sessions + '-session ' + pkg.displayType + ' package from Blocksmiths. Follow this template closely. 90% identical, one or two sentences can vary slightly to feel natural:\\n\\n' + firstName + ',\\n\\nPayment confirmed. You have ' + pkg.sessions + ' ' + pkg.displayType + ' sessions locked in.\\n\\nUse the link below to book your first one. Pick a time that works and come ready. We do not waste reps.\\n\\n' + pkg.calendlyUrl + '\\n\\nSessions are 60 minutes. Show up early, bring water, wear cleats.\\n\\nCoach Cooper\\nBlocksmiths\\ncoachcooper@mytrenches.com\\n\\nReturn only the email body. No subject line. No explanation. No additions.';\n}\n\nconst claudeBody = {\n  model: 'claude-haiku-4-5-20251001',\n  max_tokens: 400,\n  system: 'You are Coach Eric Cooper, founder of Blocksmiths, a youth football training company specializing in offensive and defensive line development. Write like a coach: direct, confident, no wasted words. Never use: I wanted to reach out, I hope this finds you well, excited to, thrilled, journey, empower, looking forward to working with you, do not hesitate to reach out, please feel free, or anything that sounds like a marketing template. No motivational filler. Every sentence does a job.',\n  messages: [\n    {\n      role: 'user',\n      content: emailContent\n    }\n  ]\n};\n\nconst smsUrl = pkg.sessionType === 'group' ? bookingUrl : pkg.calendlyUrl;\nconst smsMessage = pkg.sessionType === 'group'\n  ? firstName + ' - Blocksmiths package confirmed. Select your sessions here: ' + smsUrl + ' Reply STOP to opt out.'\n  : firstName + ' - Blocksmiths package confirmed. ' + pkg.sessions + ' ' + pkg.displayType + ' sessions locked in. Book here: ' + smsUrl + ' Reply STOP to opt out.';\n\nreturn [{\n  json: {\n    firstName,\n    customerEmail,\n    customerPhone,\n    packageType: pkg.type,\n    sessionCount: pkg.sessions,\n    calendlyUrl: pkg.calendlyUrl,\n    smsMessage,\n    claudeBody: JSON.stringify(claudeBody)\n  }\n}];"
+      }
+    },
+    {
+      "id": "a1b2c3d4-0003-0003-0003-a1b2c3d40003",
+      "name": "Claude — Generate Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "REPLACE_WITH_ANTHROPIC_API_KEY" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.claudeBody }}"
+      }
+    },
+    {
+      "id": "a1b2c3d4-0004-0004-0004-a1b2c3d40004",
+      "name": "Gmail — Send Welcome",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1120, 300],
+      "parameters": {
+        "sendTo": "={{ $('Parse & Prepare').item.json.customerEmail }}",
+        "subject": "You are in — here is how to schedule your sessions",
+        "message": "={{ $json.content[0].text }}",
+        "options": {
+          "senderName": "Coach Cooper"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-0005-0005-0005-a1b2c3d40005",
+      "name": "Twilio — Send SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "disabled": true,
+      "parameters": {
+        "operation": "send",
+        "from": "REPLACE_WITH_TWILIO_PHONE_NUMBER",
+        "to": "={{ $('Parse & Prepare').item.json.customerPhone }}",
+        "message": "={{ $('Parse & Prepare').item.json.smsMessage }}"
+      }
+    }
+  ],
+  "connections": {
+    "Stripe Webhook": {
+      "main": [[{ "node": "Verify Stripe Signature", "type": "main", "index": 0 }]]
+    },
+    "Verify Stripe Signature": {
+      "main": [[{ "node": "Parse & Prepare", "type": "main", "index": 0 }]]
+    },
+    "Parse & Prepare": {
+      "main": [[{ "node": "Claude — Generate Message", "type": "main", "index": 0 }]]
+    },
+    "Claude — Generate Message": {
+      "main": [[{ "node": "Gmail — Send Welcome", "type": "main", "index": 0 }]]
+    },
+    "Gmail — Send Welcome": {
+      "main": [[{ "node": "Twilio — Send SMS", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -7,21 +7,10 @@ const sessions = [
     price: "$30",
     unit: "per athlete",
     description:
-      "Small-group training focused on footwork, hand technique, leverage, and competitive reps. Ideal for consistent development.",
+      "Small-group training focused on footwork, hand technique, leverage, and competitive reps. Book multiple dates at once — commit to a block of sessions up front.",
     spots: "Limited spots",
     accent: "#25C0D5",
-    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/blocksmiths-weekday-training",
-  },
-  {
-    title: "Sunday Session",
-    schedule: "Every Sunday · 2:00–3:00 PM",
-    price: "$50",
-    unit: "per athlete",
-    description:
-      "Indoor training at Lasorda Legacy Sports Academy, Johnstown, CO. Controlled environment, full technique focus. Minimum 3 athletes required.",
-    spots: "Min 3 athletes",
-    accent: "#0E5B8E",
-    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/blocksmiths-strength-skill",
+    bookUrl: "/book",
   },
   {
     title: "1:1 Training",
@@ -62,9 +51,58 @@ const sessions = [
   },
 ];
 
-// Stripe Payment Links — paste your links from Stripe dashboard:
-// Products → [package product] → "Create payment link" → copy URL
-const trainingPackages = [
+// Stripe Payment Links — live links from Stripe dashboard.
+// WARNING: If you change a price, update BOTH this file AND the packageMap
+// in the n8n "Blocksmiths — Package Purchase Welcome" workflow code node.
+// The n8n workflow identifies packages by amount_total in cents.
+//
+// Group packages: replace REPLACE_* placeholders with actual Stripe payment link URLs
+// after creating them in the Stripe dashboard.
+// Set success URL to: https://blocksmiths.mytrenches.com/thank-you?type=group-pack
+// For membership: ?type=membership — For summer special: ?type=summer-special
+
+const groupPackages = [
+  {
+    title: "Group Training",
+    count: "4 Sessions",
+    price: "$110",
+    perSession: "$27.50 / session",
+    savings: "Save $10",
+    stripeUrl: "https://buy.stripe.com/eVq6oH6PCdoJ0JN27zgEg04",
+    bookUrl: "/book",
+  },
+  {
+    title: "Group Training",
+    count: "8 Sessions",
+    price: "$200",
+    perSession: "$25 / session",
+    savings: "Save $40",
+    stripeUrl: "https://buy.stripe.com/aFacN5gqcesN0JN8vXgEg05",
+    bookUrl: "/book",
+  },
+  {
+    title: "Monthly Membership",
+    count: "Unlimited Sessions",
+    price: "$150 / mo",
+    perSession: "All Tue & Fri sessions",
+    savings: "Save $90 at full attendance",
+    stripeUrl: "https://buy.stripe.com/aFa5kDfm8bgB78bdQhgEg06",
+    bookUrl: "/book",
+  },
+  // REMOVE THIS ENTRY AFTER JULY 31, 2026
+  {
+    title: "Summer Special",
+    count: "Through July 31",
+    price: "$250",
+    perSession: "Unlimited Tue & Fri",
+    savings: "All sessions through July 31",
+    stripeUrl: "https://buy.stripe.com/6oUdR9gqc3O9fEHcMdgEg07",
+    bookUrl: "/book",
+    badge: "Limited Time",
+  },
+];
+
+const privatePackages = [
   {
     title: "1:1 Training",
     count: "5 Sessions",
@@ -72,6 +110,7 @@ const trainingPackages = [
     perSession: "$80 / session",
     savings: "Save $25",
     stripeUrl: "https://buy.stripe.com/6oUcN5de070l8cfh2tgEg03",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/1-1-package-session",
   },
   {
     title: "1:1 Training",
@@ -80,6 +119,7 @@ const trainingPackages = [
     perSession: "$75 / session",
     savings: "Save $100",
     stripeUrl: "https://buy.stripe.com/dRmeVd0re84peAD4fHgEg02",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/1-1-package-session",
   },
   {
     title: "Team Training",
@@ -88,6 +128,7 @@ const trainingPackages = [
     perSession: "$250 / session",
     savings: "Save $250",
     stripeUrl: "https://buy.stripe.com/5kQ8wPei470ldwzfYpgEg01",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/team-training-package-session",
   },
   {
     title: "Team Training",
@@ -96,6 +137,7 @@ const trainingPackages = [
     perSession: "$200 / session",
     savings: "Save $1,000",
     stripeUrl: "https://buy.stripe.com/dRm6oHde0gAVakn3bDgEg00",
+    calendlyUrl: "https://calendly.com/coachcooper-mytrenches/team-training-package-session",
   },
 ];
 
@@ -112,8 +154,78 @@ const trustItems = [
   "Northern Colorado",
   "O-Line & D-Line Specialists",
   "Ages 8–18",
-  "Tue · Fri · Every Sunday",
+  "Tue & Fri",
 ];
+
+type PackageCard = {
+  title: string;
+  count: string;
+  price: string;
+  perSession: string;
+  savings: string;
+  stripeUrl: string;
+  bookUrl?: string;
+  calendlyUrl?: string;
+  badge?: string;
+};
+
+function PackageCardItem({ pkg }: { pkg: PackageCard }) {
+  return (
+    <div
+      className="rounded-2xl p-6 flex flex-col transition-transform duration-200 hover:-translate-y-0.5"
+      style={{ backgroundColor: "#0E5B8E" }}
+    >
+      <div className="mb-1">
+        {pkg.badge && (
+          <span
+            className="inline-block text-xs font-black px-2 py-0.5 rounded mb-2 uppercase tracking-wide"
+            style={{ backgroundColor: "rgba(255,193,7,0.2)", color: "#ffc107" }}
+          >
+            {pkg.badge}
+          </span>
+        )}
+        <div className="text-xs font-bold tracking-widest uppercase mb-1" style={{ color: "#25C0D5" }}>
+          {pkg.title}
+        </div>
+        <div className="text-lg font-black text-white">{pkg.count}</div>
+      </div>
+
+      <div className="mb-5 mt-3">
+        <div className="text-3xl font-black text-white">{pkg.price}</div>
+        <div className="text-sm mt-0.5" style={{ color: "#8a9ab5" }}>{pkg.perSession}</div>
+      </div>
+
+      <div
+        className="text-xs font-bold px-2 py-1 rounded w-fit mb-6"
+        style={{ backgroundColor: "rgba(37,192,213,0.18)", color: "#25C0D5" }}
+      >
+        {pkg.savings}
+      </div>
+
+      <a
+        href={pkg.stripeUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-auto block text-center text-sm font-bold py-3 px-4 rounded-xl transition-opacity hover:opacity-90"
+        style={{ backgroundColor: "#25C0D5", color: "#192B57" }}
+      >
+        Buy Package
+      </a>
+      {(pkg.bookUrl || pkg.calendlyUrl) && (
+        <a
+          href={pkg.bookUrl ?? pkg.calendlyUrl}
+          {...(pkg.calendlyUrl && !pkg.bookUrl
+            ? { target: "_blank", rel: "noopener noreferrer" }
+            : {})}
+          className="mt-2 block text-center text-xs font-semibold py-2 px-4 rounded-xl border transition-opacity hover:opacity-70"
+          style={{ borderColor: "rgba(37,192,213,0.35)", color: "#25C0D5" }}
+        >
+          {pkg.bookUrl ? "Already purchased? Select sessions →" : "Already purchased? Schedule →"}
+        </a>
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -318,6 +430,14 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
+                  ) : s.bookUrl ? (
+                    <a
+                      href={s.bookUrl}
+                      className="text-xs font-bold tracking-wide transition-opacity hover:opacity-60"
+                      style={{ color: s.accent }}
+                    >
+                      Select sessions →
+                    </a>
                   ) : (
                     <a
                       href={s.calendlyUrl}
@@ -350,53 +470,39 @@ export default function Home() {
               Training Packages
             </h2>
             <p className="text-base max-w-xl mx-auto" style={{ color: "#8a9ab5" }}>
-              Lock in a block of sessions at a reduced rate. Packages are paid upfront
-              via Stripe — scheduling is handled through Calendly after purchase.
+              Lock in a block of sessions at a reduced rate. Group packs and memberships let
+              you choose your specific dates at{" "}
+              <a href="/book" style={{ color: "#25C0D5" }}>blocksmiths.mytrenches.com/book</a>{" "}
+              after purchase. 1:1 and team packages schedule via Calendly.
             </p>
           </div>
 
-          <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {trainingPackages.map((pkg) => (
-              <div
-                key={`${pkg.title}-${pkg.count}`}
-                className="rounded-2xl p-6 flex flex-col transition-transform duration-200 hover:-translate-y-0.5"
-                style={{ backgroundColor: "#0E5B8E" }}
-              >
-                <div className="mb-4">
-                  <div className="text-xs font-bold tracking-widest uppercase mb-1" style={{ color: "#25C0D5" }}>
-                    {pkg.title}
-                  </div>
-                  <div className="text-lg font-black text-white">{pkg.count}</div>
-                </div>
+          {/* Group Packages */}
+          <div className="mt-10">
+            <p className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: "#8a9ab5" }}>
+              Group Sessions
+            </p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {groupPackages.map((pkg) => (
+                <PackageCardItem key={`${pkg.title}-${pkg.count}`} pkg={pkg} />
+              ))}
+            </div>
+          </div>
 
-                <div className="mb-5">
-                  <div className="text-3xl font-black text-white">{pkg.price}</div>
-                  <div className="text-sm mt-0.5" style={{ color: "#8a9ab5" }}>{pkg.perSession}</div>
-                </div>
-
-                <div
-                  className="text-xs font-bold px-2 py-1 rounded w-fit mb-6"
-                  style={{ backgroundColor: "rgba(37,192,213,0.18)", color: "#25C0D5" }}
-                >
-                  {pkg.savings}
-                </div>
-
-                <a
-                  href={pkg.stripeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-auto block text-center text-sm font-bold py-3 px-4 rounded-xl transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: "#25C0D5", color: "#192B57" }}
-                >
-                  Buy Package
-                </a>
-              </div>
-            ))}
+          {/* Private & Team Packages */}
+          <div className="mt-10">
+            <p className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: "#8a9ab5" }}>
+              1:1 &amp; Team Training
+            </p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {privatePackages.map((pkg) => (
+                <PackageCardItem key={`${pkg.title}-${pkg.count}`} pkg={pkg} />
+              ))}
+            </div>
           </div>
 
           <p className="text-center text-xs mt-8" style={{ color: "#5a6478" }}>
-            After purchase you&apos;ll receive a confirmation — then we&apos;ll coordinate
-            scheduling directly. Questions?{" "}
+            Questions about packages?{" "}
             <a href="mailto:coachcooper@mytrenches.com" style={{ color: "#25C0D5" }}>
               coachcooper@mytrenches.com
             </a>
@@ -456,15 +562,34 @@ export default function Home() {
       {/* Booking */}
       <section id="book" className="py-20 px-6 bg-white">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <h2 className="text-3xl font-black mb-3" style={{ color: "#192B57" }}>
               Book a Session
             </h2>
-            <p className="text-base max-w-xl mx-auto" style={{ color: "#5a6478" }}>
-              Select your session type, pick a time, and pay securely. Your spot is
-              locked the moment you book.
+            <p className="text-base max-w-xl mx-auto mb-6" style={{ color: "#5a6478" }}>
+              Group sessions use our custom booking page — pick multiple dates at once and
+              pay securely. 1:1, semi-private, and team training schedule below.
             </p>
-            <p className="text-sm mt-2" style={{ color: "#8a9ab5" }}>
+            <a
+              href="/book"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded font-bold text-base transition-transform hover:scale-105"
+              style={{ backgroundColor: "#25C0D5", color: "#192B57" }}
+            >
+              Book Group Sessions
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </a>
+          </div>
+
+          <div
+            className="rounded-2xl border p-6 mb-6"
+            style={{ backgroundColor: "#F5F6F8", borderColor: "#e2e8f0" }}
+          >
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#192B57" }}>
+              1:1, Semi-Private &amp; Team Training — Schedule Below
+            </p>
+            <p className="text-sm" style={{ color: "#5a6478" }}>
               Questions before booking?{" "}
               <a
                 href="mailto:coachcooper@mytrenches.com"
@@ -500,12 +625,12 @@ export default function Home() {
                 a: "Cleats or athletic shoes, water, and a willingness to work. No pads required for technique sessions.",
               },
               {
-                q: "What if the Sunday session doesn't hit the minimum?",
-                a: "Sunday sessions require a minimum of 3 athletes to run. If we don't hit the minimum, you'll be contacted and fully refunded.",
+                q: "How does group session booking work?",
+                a: "Group sessions use our custom booking page at blocksmiths.mytrenches.com/book. You can select multiple upcoming sessions at once — great for locking in a block of Tuesday and Friday slots without rebooking each week.",
               },
               {
                 q: "How do training packages work?",
-                a: "Pay upfront via Stripe to lock in your sessions at the discounted rate. After purchase, we'll coordinate scheduling directly — email coachcooper@mytrenches.com or book through Calendly.",
+                a: "Pay upfront via Stripe to lock in your sessions at the discounted rate. Group packs and memberships let you choose specific sessions at blocksmiths.mytrenches.com/book — pick the dates that work for you and book them all at once. 1:1 and team packages use a scheduling link sent by email after purchase.",
               },
               {
                 q: "Can I book a 30-minute 1:1?",
@@ -550,6 +675,16 @@ export default function Home() {
           <a href="mailto:coachcooper@mytrenches.com" className="text-xs" style={{ color: "#25C0D5" }}>
             coachcooper@mytrenches.com
           </a>
+        </div>
+        <div className="max-w-5xl mx-auto mt-6 pt-6 border-t flex flex-col md:flex-row items-center justify-between gap-3" style={{ borderColor: "#0E5B8E" }}>
+          <div className="flex gap-5 text-xs" style={{ color: "#8a9ab5" }}>
+            <a href="/privacy" className="hover:underline" style={{ color: "#8a9ab5" }}>Privacy Policy</a>
+            <a href="/terms" className="hover:underline" style={{ color: "#8a9ab5" }}>Terms &amp; Conditions</a>
+            <a href="/waiver" className="hover:underline" style={{ color: "#8a9ab5" }}>Waiver</a>
+          </div>
+          <p className="text-xs text-center md:text-right max-w-sm" style={{ color: "#5a6478" }}>
+            By providing your phone number at checkout, you consent to receive transactional SMS from Blocksmiths. Reply STOP to opt out.
+          </p>
         </div>
       </footer>
     </div>
